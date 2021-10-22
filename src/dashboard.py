@@ -24,7 +24,9 @@ from icmplib import ping, multiping, traceroute, resolve, Host, Hop
 # Dashboard Version
 dashboard_version = 'v2.3.1'
 # Dashboard Config Name
-dashboard_conf = 'wg-dashboard.ini'
+configuration_path = os.getenv('CONFIGURATION_PATH', '.')
+db_path = os.path.join(configuration_path, 'db')
+dashboard_conf = os.path.join(configuration_path, 'wg-dashboard.ini')
 # Upgrade Required
 update = ""
 # Flask App Configuration
@@ -284,7 +286,7 @@ def get_allowed_ip(config_name, db, peers, conf_peer_data):
 
 # Look for new peers from WireGuard
 def get_all_peers_data(config_name):
-    db = TinyDB('db/' + config_name + '.json')
+    db = TinyDB(os.path.join(db_path, config_name + '.json'))
     peers = Query()
     conf_peer_data = read_conf_file(config_name)
     config = get_dashboard_conf()
@@ -348,7 +350,7 @@ Frontend Related Functions
 # Search for peers
 def get_peers(config_name, search, sort_t):
     get_all_peers_data(config_name)
-    db = TinyDB('db/' + config_name + '.json')
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     peer = Query()
     if len(search) == 0:
         result = db.all()
@@ -386,7 +388,7 @@ def get_conf_listen_port(config_name):
 
 # Get configuration total data
 def get_conf_total_data(config_name):
-    db = TinyDB('db/' + config_name + '.json')
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     upload_total = 0
     download_total = 0
     for i in db.all():
@@ -462,7 +464,7 @@ def checkKeyMatch(private_key, public_key, config_name):
     if result['status'] == 'failed':
         return result
     else:
-        db = TinyDB('db/' + config_name + '.json')
+        db = TinyDB(os.path.join(db_path, config_name + ".json"))
         peers = Query()
         match = db.search(peers.id == result['data'])
         if len(match) != 1 or result['data'] != public_key:
@@ -472,7 +474,7 @@ def checkKeyMatch(private_key, public_key, config_name):
 
 # Check if there is repeated allowed IP
 def check_repeat_allowed_IP(public_key, ip, config_name):
-    db = TinyDB('db/' + config_name + '.json')
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     peers = Query()
     peer = db.search(peers.id == public_key)
     if len(peer) != 1:
@@ -839,7 +841,7 @@ def switch(config_name):
 # Add peer
 @app.route('/add_peer/<config_name>', methods=['POST'])
 def add_peer(config_name):
-    db = TinyDB("db/" + config_name + ".json")
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     peers = Query()
     data = request.get_json()
     public_key = data['public_key']
@@ -889,7 +891,7 @@ def add_peer(config_name):
 def remove_peer(config_name):
     if get_conf_status(config_name) == "stopped":
         return "Your need to turn on " + config_name + " first."
-    db = TinyDB("db/" + config_name + ".json")
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     peers = Query()
     data = request.get_json()
     delete_key = data['peer_id']
@@ -920,7 +922,7 @@ def save_peer_setting(config_name):
     DNS = data['DNS']
     allowed_ip = data['allowed_ip']
     endpoint_allowed_ip = data['endpoint_allowed_ip']
-    db = TinyDB("db/" + config_name + ".json")
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     peers = Query()
     if len(db.search(peers.id == id)) == 1:
         check_ip = check_repeat_allowed_IP(id, allowed_ip, config_name)
@@ -970,7 +972,7 @@ def save_peer_setting(config_name):
 def get_peer_name(config_name):
     data = request.get_json()
     id = data['id']
-    db = TinyDB("db/" + config_name + ".json")
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     peers = Query()
     result = db.search(peers.id == id)
     db.close()
@@ -1004,7 +1006,7 @@ def check_key_match(config_name):
 def download(config_name):
     print(request.headers.get('User-Agent'))
     id = request.args.get('id')
-    db = TinyDB("db/" + config_name + ".json")
+    db = TinyDB(os.path.join(db_path, config_name + ".json"))
     peers = Query()
     get_peer = db.search(peers.id == id)
     config = get_dashboard_conf()
@@ -1062,7 +1064,7 @@ Dashboard Tools Related
 @app.route('/get_ping_ip', methods=['POST'])
 def get_ping_ip():
     config = request.form['config']
-    db = TinyDB('db/' + config + '.json')
+    db = TinyDB(os.path.join(db_path, config + ".json"))
     html = ""
     for i in db.all():
         html += '<optgroup label="' + i['name'] + ' - ' + i['id'] + '">'
@@ -1122,8 +1124,8 @@ Dashboard Initialization
 """
 def init_dashboard():
     # Set Default INI File
-    if not os.path.isfile("wg-dashboard.ini"):
-        conf_file = open("wg-dashboard.ini", "w+")
+    if not os.path.isfile(dashboard_conf):
+        conf_file = open(dashboard_conf, "w+")
     config = configparser.ConfigParser(strict=False)
     config.read(dashboard_conf)
     # Defualt dashboard account setting
@@ -1192,7 +1194,7 @@ def run_dashboard():
     update = check_update()
     global config
     config = configparser.ConfigParser(strict=False)
-    config.read('wg-dashboard.ini')
+    config.read(dashboard_conf)
     global app_ip
     app_ip = config.get("Server", "app_ip")
     global app_port
