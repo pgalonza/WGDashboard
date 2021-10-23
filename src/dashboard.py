@@ -6,6 +6,8 @@ Under Apache-2.0 License
 
 # Python Built-in Library
 import os
+import sys
+
 from flask import Flask, request, render_template, redirect, url_for, session, abort, jsonify
 import subprocess
 from datetime import datetime, date, time, timedelta
@@ -26,6 +28,7 @@ dashboard_version = 'v2.3.1'
 # Dashboard Config Name
 configuration_path = os.getenv('CONFIGURATION_PATH', '.')
 db_path = os.path.join(configuration_path, 'db')
+os.mkdir(db_path)
 dashboard_conf = os.path.join(configuration_path, 'wg-dashboard.ini')
 # Upgrade Required
 update = ""
@@ -1064,7 +1067,7 @@ Dashboard Tools Related
 @app.route('/get_ping_ip', methods=['POST'])
 def get_ping_ip():
     config = request.form['config']
-    db = TinyDB(os.path.join(db_path, config + ".json"))
+    db = TinyDB('db/' + config + '.json')
     html = ""
     for i in db.all():
         html += '<optgroup label="' + i['name'] + ' - ' + i['id'] + '">'
