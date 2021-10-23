@@ -1208,6 +1208,7 @@ def run_dashboard():
 Get host and port for web-server
 """
 def get_host_bind():
+    init_dashboard()
     config = configparser.ConfigParser(strict=False)
     config.read(dashboard_conf)
     app_ip = config.get("Server", "app_ip")
