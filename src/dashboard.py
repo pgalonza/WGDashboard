@@ -1214,6 +1214,7 @@ def get_host_bind():
     config.read(dashboard_conf)
     app_ip = config.get("Server", "app_ip")
     app_port = config.get("Server", "app_port")
+    config.clear()
 
     return app_ip, app_port
 
