@@ -3,6 +3,14 @@
 app_name="dashboard.py"
 app_official_name="WGDashboard"
 environment=$(if [[ $ENVIRONMENT ]]; then echo $ENVIRONMENT; else echo 'develop'; fi)
+if [[ $CONFIGURATION_PATH ]]; then
+  cb_work_dir=$CONFIGURATION_PATH/letsencrypt/work-dir
+  cb_config_dir=$CONFIGURATION_PATH/letsencrypt/config-dir
+else
+  cb_work_dir=/etc/letsencrypt
+  cb_config_dir=/var/lib/letsencrypt
+fi
+
 dashes='------------------------------------------------------------'
 equals='============================================================'
 help () {
@@ -57,21 +65,51 @@ check_wgd_status(){
   fi
 }
 
+certbot_create_ssl () {
+  certbot certonly --config ./certbot.ini --email "$EMAIL" --work-dir $cb_work_dir --config-dir $cb_config_dir --domain "$SERVERURL"
+}
+
+certbot_renew_ssl () {
+  certbot renew --work-dir $cb_work_dir --config-dir $cb_config_dir
+}
+
+gunicorn_start () {
+  if [[ $SSL ]]; then
+    if [ ! -d $cb_config_dir ]; then
+      certbot_create_ssl
+    else
+      certbot_renew_ssl
+    fi
+  fi
+  printf "%s\n" "$dashes"
+  printf "| Starting WGDashboard in the background.          |\n"
+  if [ ! -d "log" ]; then
+    mkdir "log"
+  fi
+  d=$(date '+%Y%m%d%H%M%S')
+  if [[ $USER == root ]]; then
+    export PATH=$PATH:/usr/local/bin:$HOME/.local/bin
+  fi
+  if [[ $SSL ]]; then
+    gunicorn --certfile $cb_config_dir/live/"$SERVERURL"/privkey.pem \
+    --keyfile $cb_config_dir/live/"$SERVERURL"/cert.pem \
+    --access-logfile log/access_"$d".log \
+    --error-logfile log/error_"$d".log 'dashboard:run_dashboard()'
+  else
+    gunicorn --access-logfile log/access_"$d".log \
+    --error-logfile log/error_"$d".log 'dashboard:run_dashboard()'
+  fi
+  printf "| Log files is under log/                                  |\n"
+  printf "%s\n" "$dashes"
+}
+
+gunicorn_stop () {
+  kill $(cat ./gunicorn.pid)
+}
+
 start_wgd () {
     if [[ $environment == 'production' ]]; then
-      printf "%s\n" "$dashes"
-      printf "| Starting WGDashboard in the background.          |\n"
-      if [ ! -d "log" ]
-        then mkdir "log"
-      fi
-      d=$(date '+%Y%m%d%H%M%S')
-      if [[ $USER == root ]]; then
-        export PATH=$PATH:/usr/local/bin:$HOME/.local/bin
-      fi
-      gunicorn --access-logfile log/access_"$d".log \
-      --error-logfile log/error_"$d".log 'dashboard:run_dashboard()'
-      printf "| Log files is under log/                                  |\n"
-      printf "%s\n" "$dashes"
+      gunicorn_start
     else
       printf "%s\n" "$dashes"
       printf "| Starting WGDashboard in the background.          |\n"
@@ -87,7 +125,7 @@ start_wgd () {
 
 stop_wgd() {
   if [[ $environment == 'production' ]]; then
-    kill $(cat ./gunicorn.pid)
+    gunicorn_stop
   else
     kill "$(ps aux | grep "[p]ython3 $app_name" | awk '{print $2}')"
   fi
