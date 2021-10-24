@@ -3,4 +3,5 @@ tinydb
 ifcfg
 icmplib
 flask-qrcode
-gunicorn
+gunicorn==20.1.0
+certbot=1.20.0
