@@ -91,8 +91,8 @@ gunicorn_start () {
     export PATH=$PATH:/usr/local/bin:$HOME/.local/bin
   fi
   if [[ $SSL ]]; then
-    gunicorn --certfile $cb_config_dir/live/"$SERVERURL"/privkey.pem \
-    --keyfile $cb_config_dir/live/"$SERVERURL"/cert.pem \
+    gunicorn --certfile $cb_config_dir/live/"$SERVERURL"/cert.pem \
+    --keyfile $cb_config_dir/live/"$SERVERURL"/privkey.pem \
     --access-logfile log/access_"$d".log \
     --error-logfile log/error_"$d".log 'dashboard:run_dashboard()'
   else
