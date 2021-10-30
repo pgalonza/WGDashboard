@@ -1067,7 +1067,7 @@ Dashboard Tools Related
 @app.route('/get_ping_ip', methods=['POST'])
 def get_ping_ip():
     config = request.form['config']
-    db = TinyDB('db/' + config + '.json')
+    db = TinyDB(os.path.join(db_path, config + ".json"))
     html = ""
     for i in db.all():
         html += '<optgroup label="' + i['name'] + ' - ' + i['id'] + '">'
