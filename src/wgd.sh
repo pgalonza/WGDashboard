@@ -1,6 +1,6 @@
 #!/bin/bash
 
-app_name="dashboard.py"
+app_name="wsgi.py"
 app_official_name="WGDashboard"
 environment=$(if [[ $ENVIRONMENT ]]; then echo $ENVIRONMENT; else echo 'develop'; fi)
 if [[ $CONFIGURATION_PATH ]]; then

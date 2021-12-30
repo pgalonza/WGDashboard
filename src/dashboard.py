@@ -27,7 +27,7 @@ from icmplib import ping, traceroute
 from tinydb import TinyDB, Query
 
 # Import other python files
-from util import regex_match, check_DNS, check_Allowed_IPs, check_remote_endpoint,\
+from util import regex_match, check_DNS, check_Allowed_IPs, check_remote_endpoint, \
     check_IP_with_range, clean_IP_with_range
 
 # Dashboard Version
@@ -301,7 +301,7 @@ def get_all_peers_data(config_name):
             if "keepalive" not in search[0]:
                 update_db['keepalive'] = config.get("Peers", "peer_keep_alive")
             if "remote_endpoint" not in search[0]:
-                update_db['remote_endpoint'] = config.get("Peers","remote_endpoint")
+                update_db['remote_endpoint'] = config.get("Peers", "remote_endpoint")
             if "preshared_key" not in search[0]:
                 if "PresharedKey" in i.keys():
                     update_db['preshared_key'] = i["PresharedKey"]
@@ -484,6 +484,7 @@ def f_check_key_match(private_key, public_key, config_name):
             except RuntimeError as e:
                 print("RuntimeError: cannot release un-acquired lock")
             return {'status': 'success'}
+
 
 # Check if there is repeated allowed IP
 def check_repeat_allowed_ip(public_key, ip, config_name):
@@ -841,7 +842,7 @@ def get_conf(config_name):
     config = get_dashboard_conf()
     sort = config.get("Server", "dashboard_sort")
     peer_display_mode = config.get("Peers", "peer_display_mode")
-    wg_ip = config.get("Peers","remote_endpoint")
+    wg_ip = config.get("Peers", "remote_endpoint")
     if "Address" not in config_interface:
         conf_address = "N/A"
     else:
@@ -870,6 +871,7 @@ def get_conf(config_name):
     # return render_template('get_conf.html', conf_data=conf_data, wg_ip=config.get("Peers","remote_endpoint"), sort_tag=sort,
     #                        dashboard_refresh_interval=int(config.get("Server", "dashboard_refresh_interval")), peer_display_mode=peer_display_mode)
 
+
 # Turn on / off a configuration
 @app.route('/switch/<config_name>', methods=['GET'])
 def switch(config_name):
@@ -890,6 +892,7 @@ def switch(config_name):
         except subprocess.CalledProcessError:
             return redirect('/')
     return redirect(request.referrer)
+
 
 # Add peer
 @app.route('/add_peer/<config_name>', methods=['POST'])
@@ -947,24 +950,25 @@ def add_peer(config_name):
             print("RuntimeError: cannot release un-acquired lock")
         return "Endpoint Allowed IPs format is incorrect."
     if len(data['MTU']) == 0 or not data['MTU'].isdigit():
-          db.close()
-          try:
-              sem.release()
-          except RuntimeError as e:
-              print("RuntimeError: cannot release un-acquired lock")
-          return "MTU format is not correct."
+        db.close()
+        try:
+            sem.release()
+        except RuntimeError as e:
+            print("RuntimeError: cannot release un-acquired lock")
+        return "MTU format is not correct."
     if len(data['keep_alive']) == 0 or not data['keep_alive'].isdigit():
-          db.close()
-          try:
-              sem.release()
-          except RuntimeError as e:
-              print("RuntimeError: cannot release un-acquired lock")
-          return "Persistent Keepalive format is not correct."
+        db.close()
+        try:
+            sem.release()
+        except RuntimeError as e:
+            print("RuntimeError: cannot release un-acquired lock")
+        return "Persistent Keepalive format is not correct."
     try:
         if enable_preshared_key == True:
             key = subprocess.check_output("wg genpsk > tmp_psk.txt", shell=True)
-            status = subprocess.check_output(f"wg set {config_name} peer {public_key} allowed-ips {allowed_ips} preshared-key tmp_psk.txt",
-                                             shell=True, stderr=subprocess.STDOUT)
+            status = subprocess.check_output(
+                f"wg set {config_name} peer {public_key} allowed-ips {allowed_ips} preshared-key tmp_psk.txt",
+                shell=True, stderr=subprocess.STDOUT)
             os.remove("tmp_psk.txt")
         elif enable_preshared_key == False:
             status = subprocess.check_output(f"wg set {config_name} peer {public_key} allowed-ips {allowed_ips}",
@@ -1008,10 +1012,10 @@ def remove_peer(config_name):
         return "This key does not exist"
     else:
         try:
-            remove_wg = subprocess.check_output(f"wg set {config_name} peer {delete_key} remove", 
-                                             shell=True, stderr=subprocess.STDOUT)
+            remove_wg = subprocess.check_output(f"wg set {config_name} peer {delete_key} remove",
+                                                shell=True, stderr=subprocess.STDOUT)
             save_wg = subprocess.check_output(f"wg-quick save {config_name}",
-                                             shell=True, stderr=subprocess.STDOUT)
+                                              shell=True, stderr=subprocess.STDOUT)
             db.remove(peers.id == delete_key)
             db.close()
             try:
@@ -1026,6 +1030,7 @@ def remove_peer(config_name):
             except RuntimeError as e:
                 print("RuntimeError: cannot release un-acquired lock")
             return exc.output.strip()
+
 
 # Save peer settings
 @app.route('/save_peer_setting/<config_name>', methods=['POST'])
@@ -1115,12 +1120,12 @@ def save_peer_setting(config_name):
                 return jsonify({"status": "failed", "msg": change_ip.decode("UTF-8")})
             db.update(
                 {
-                    "name": name, 
-                     "private_key": private_key,
-                     "DNS": dns_addresses, 
-                     "endpoint_allowed_ip": endpoint_allowed_ip,
-                     "mtu": data['MTU'],
-                     "keepalive":data['keep_alive'], "preshared_key": preshared_key
+                    "name": name,
+                    "private_key": private_key,
+                    "DNS": dns_addresses,
+                    "endpoint_allowed_ip": endpoint_allowed_ip,
+                    "mtu": data['MTU'],
+                    "keepalive": data['keep_alive'], "preshared_key": preshared_key
                 }, peers.id == id)
             db.close()
             try:
@@ -1227,10 +1232,13 @@ def generate_qrcode(config_name):
             except RuntimeError as e:
                 print("RuntimeError: cannot release un-acquired lock")
 
-            result = "[Interface]\nPrivateKey = "+conf['private_key']+"\nAddress = "+conf['allowed_ip']+"\nMTU = "+conf['mtu']+"\nDNS = "+conf['DNS']\
-                     +"\n\n[Peer]\nPublicKey = "+conf['public_key']+"\nAllowedIPs = "+conf['endpoint_allowed_ip']+"\nPersistentKeepalive = "+conf['keepalive']+"\nEndpoint = "+conf['endpoint']
+            result = "[Interface]\nPrivateKey = " + conf['private_key'] + "\nAddress = " + conf[
+                'allowed_ip'] + "\nMTU = " + conf['mtu'] + "\nDNS = " + conf['DNS'] \
+                     + "\n\n[Peer]\nPublicKey = " + conf['public_key'] + "\nAllowedIPs = " + conf[
+                         'endpoint_allowed_ip'] + "\nPersistentKeepalive = " + conf['keepalive'] + "\nEndpoint = " + \
+                     conf['endpoint']
             if preshared_key != "":
-                result += "\nPresharedKey = "+preshared_key
+                result += "\nPresharedKey = " + preshared_key
 
             return render_template("qrcode.html", i=result)
     else:
@@ -1282,7 +1290,7 @@ def download(config_name):
             filename = filename + "_" + config_name
             psk = ""
             if preshared_key != "":
-                psk = "\nPresharedKey = "+preshared_key
+                psk = "\nPresharedKey = " + preshared_key
             db.close()
             try:
                 sem.release()
@@ -1292,7 +1300,8 @@ def download(config_name):
                      dns_addresses + "\nMTU = " + mtu_value + "\n\n[Peer]\nPublicKey = " + \
                      public_key + "\nAllowedIPs = " + endpoint_allowed_ip + "\nEndpoint = " + \
                      endpoint + "\nPersistentKeepalive = " + keepalive + psk
-            return app.response_class((yield result), mimetype='text/conf', headers={"Content-Disposition": "attachment;filename=" + filename + ".conf"})
+            return app.response_class((yield result), mimetype='text/conf',
+                                      headers={"Content-Disposition": "attachment;filename=" + filename + ".conf"})
     db.close()
     return redirect("/configuration/" + config_name)
 
@@ -1454,37 +1463,21 @@ def check_update():
 
 
 """
-Configure DashBoard before start web-server
-"""
-def run_dashboard():
-    init_dashboard()
-    global UPDATE
-    UPDATE = check_update()
-    configuration_settings = get_dashboard_conf()
-    global app_ip
-    app_ip = configuration_settings.get("Server", "app_ip")
-    global app_port
-    app_port = int(configuration_settings.get("Server", "app_port"))
-    global wg_conf_path
-    wg_conf_path = configuration_settings.get("Server", "wg_conf_path")
-    configuration_settings.clear()
-
-"""
 Get host and port for web-server
 """
 def get_host_bind():
-    init_dashboard()
-    config = configparser.ConfigParser(strict=False)
-    config.read(DASHBOARD_CONF)
-    app_ip = config.get("Server", "app_ip")
-    app_port = config.get("Server", "app_port")
-    config.clear()
+    app_ip = configuration_settings.get("Server", "app_ip")
+    app_port = configuration_settings.get("Server", "app_port")
+    configuration_settings.clear()
 
     return app_ip, app_port
 
 
 if __name__ == "__main__":
-    run_dashboard()
-    app.run(host=app_ip, debug=False, port=app_port)
+    pass
 else:
-    run_dashboard()
+    init_dashboard()
+    UPDATE = check_update()
+    configuration_settings = get_dashboard_conf()
+    wg_conf_path = configuration_settings.get("Server", "wg_conf_path")
+    configuration_settings.clear()
