@@ -1458,19 +1458,16 @@ Configure DashBoard before start web-server
 """
 def run_dashboard():
     init_dashboard()
-    global update
-    update = check_update()
-    global config
-    config = configparser.ConfigParser(strict=False)
-    config.read(DASHBOARD_CONF)
+    global UPDATE
+    UPDATE = check_update()
+    configuration_settings = get_dashboard_conf()
     global app_ip
-    app_ip = config.get("Server", "app_ip")
+    app_ip = configuration_settings.get("Server", "app_ip")
     global app_port
-    app_port = config.get("Server", "app_port")
+    app_port = int(configuration_settings.get("Server", "app_port"))
     global wg_conf_path
-    wg_conf_path = config.get("Server", "wg_conf_path")
-    config.clear()
-    return app
+    wg_conf_path = configuration_settings.get("Server", "wg_conf_path")
+    configuration_settings.clear()
 
 """
 Get host and port for web-server
@@ -1490,11 +1487,4 @@ if __name__ == "__main__":
     run_dashboard()
     app.run(host=app_ip, debug=False, port=app_port)
 else:
-    init_dashboard()
-    UPDATE = check_update()
-    configuration_settings = get_dashboard_conf()
-    app_ip = configuration_settings.get("Server", "app_ip")
-    app_port = int(configuration_settings.get("Server", "app_port"))
-    wg_conf_path = configuration_settings.get("Server", "wg_conf_path")
-    configuration_settings.clear()
-    app.run(host=app_ip, debug=False, port=app_port)
+    run_dashboard()
