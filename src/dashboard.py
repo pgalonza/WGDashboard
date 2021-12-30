@@ -1466,6 +1466,7 @@ def check_update():
 Get host and port for web-server
 """
 def get_host_bind():
+    configuration_settings = get_dashboard_conf()
     app_ip = configuration_settings.get("Server", "app_ip")
     app_port = configuration_settings.get("Server", "app_port")
     configuration_settings.clear()
