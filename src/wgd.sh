@@ -1,7 +1,10 @@
 #!/bin/bash
 
-app_name="wsgi.py"
+# wgd.sh - Copyright(C) 2021 Donald Zou [https://github.com/donaldzou]
+# Under Apache-2.0 License
+app_name="dashboard.py"
 app_official_name="WGDashboard"
+PID_FILE=./gunicorn.pid
 environment=$(if [[ $ENVIRONMENT ]]; then echo $ENVIRONMENT; else echo 'develop'; fi)
 if [[ $CONFIGURATION_PATH ]]; then
   cb_work_dir=$CONFIGURATION_PATH/letsencrypt/work-dir
@@ -58,15 +61,15 @@ install_wgd(){
     python3 -m pip install -U pip > /dev/null 2>&1
     printf "| Installing latest Python dependencies                    |\n"
     python3 -m pip install -U -r requirements.txt > /dev/null 2>&1
-    printf "| WGDashboard installed successfully!                     |\n"
-    printf "| Enter ./wgd start to start the dashboard                 |\n"
+    printf "| WGDashboard installed successfully!                      |\n"
+    printf "| Enter ./wgd.sh start to start the dashboard              |\n"
 }
 
 
 check_wgd_status(){
-  if [[ $environment == 'production' ]]; then
+  if test -f "$PID_FILE"; then
     if ps aux | grep -v grep | grep $(cat ./gunicorn.pid)  > /dev/null; then
-      return 0
+    return 0
     else
       return 1
     fi
@@ -96,7 +99,7 @@ gunicorn_start () {
     fi
   fi
   printf "%s\n" "$dashes"
-  printf "| Starting WGDashboard in the background.          |\n"
+  printf "| Starting WGDashboard with Gunicorn in the background.    |\n"
   if [ ! -d "log" ]; then
     mkdir "log"
   fi
@@ -108,10 +111,10 @@ gunicorn_start () {
     gunicorn --certfile $cb_config_dir/live/"$SERVERURL"/cert.pem \
     --keyfile $cb_config_dir/live/"$SERVERURL"/privkey.pem \
     --access-logfile log/access_"$d".log \
-    --error-logfile log/error_"$d".log 'wsgi:app'
+    --error-logfile log/error_"$d".log 'dashboard:run_dashboard()'
   else
     gunicorn --access-logfile log/access_"$d".log \
-    --error-logfile log/error_"$d".log 'wsgi:app'
+    --error-logfile log/error_"$d".log 'dashboard:run_dashboard()'
   fi
   printf "| Log files is under log/                                  |\n"
   printf "%s\n" "$dashes"
@@ -122,23 +125,11 @@ gunicorn_stop () {
 }
 
 start_wgd () {
-    if [[ $environment == 'production' ]]; then
-      gunicorn_start
-    else
-      printf "%s\n" "$dashes"
-      printf "| Starting WGDashboard in the background.          |\n"
-      if [ ! -d "log" ]
-        then mkdir "log"
-      fi
-      d=$(date '+%Y%m%d%H%M%S')
-      python3 "$app_name" > log/"$d".txt 2>&1 &
-      printf "| Log files is under log/                                  |\n"
-      printf "%s\n" "$dashes"
-    fi
+    gunicorn_start
 }
 
 stop_wgd() {
-  if [[ $environment == 'production' ]]; then
+  if test -f "$PID_FILE"; then
     gunicorn_stop
   else
     kill "$(ps aux | grep "[p]ython3 $app_name" | awk '{print $2}')"
@@ -165,8 +156,7 @@ update_wgd() {
     mv wgd.sh wgd.sh.old
     printf "| Downloading %s from GitHub...                            |\n" "$new_ver"
     git stash > /dev/null 2>&1
-    git pull
-#    git pull https://github.com/donaldzou/wireguard-dashboard.git $new_ver --force >  /dev/null 2>&1
+    git pull https://github.com/donaldzou/WGDashboard.git $new_ver --force >  /dev/null 2>&1
     printf "| Upgrading pip                                            |\n"
     python3 -m pip install -U pip > /dev/null 2>&1
     printf "| Installing latest Python dependencies                    |\n"
@@ -216,7 +206,7 @@ if [ "$#" != 1 ];
            printf "%s\n" "$dashes"
            stop_wgd
            printf "| WGDashboard is stopped.                                  |\n"
-           sleep 2
+           sleep 4
            start_wgd
         else
           start_wgd
