@@ -476,7 +476,6 @@ def get_conf_status(config_name):
 
 def get_conf_list():
     """Get all wireguard interfaces with status.
-
     @return: Return a list of dicts with interfaces and its statuses
     @rtype: list
     """
@@ -510,7 +509,6 @@ def get_conf_list():
 
 def gen_public_key(private_key):
     """Generate the public key.
-
     @param private_key: Private key
     @type private_key: str
     @return: Return dict with public key or error message
@@ -1239,7 +1237,6 @@ def remove_peer(config_name):
 def save_peer_setting(config_name):
     """
     Save peer configuration.
-
     @param config_name: Name of WG interface
     @type config_name: str
     @return: Return status of action and text with recommendations
@@ -1253,10 +1250,8 @@ def save_peer_setting(config_name):
     allowed_ip = data['allowed_ip']
     endpoint_allowed_ip = data['endpoint_allowed_ip']
     preshared_key = data['preshared_key']
-    sem.acquire(timeout=1)
-    db = TinyDB(os.path.join(db_path, config_name + ".json"))
-    peers = Query()
-    if len(db.search(peers.id == id)) == 1:
+    check_peer_exist = g.cur.execute("SELECT COUNT(*) FROM " + config_name + " WHERE id = ?", (id,)).fetchone()
+    if check_peer_exist[0] == 1:
         check_ip = check_repeat_allowed_ip(id, allowed_ip, config_name)
         if not check_IP_with_range(endpoint_allowed_ip):
             return jsonify({"status": "failed", "msg": "Endpoint Allowed IPs format is incorrect."})
@@ -1303,7 +1298,6 @@ def save_peer_setting(config_name):
 def get_peer_name(config_name):
     """
     Get peer settings.
-
     @param config_name: Name of WG interface
     @type config_name: str
     @return: Return settings of peer
@@ -1487,7 +1481,6 @@ def download(config_name):
 def switch_display_mode(mode):
     """
     Change display view style.
-
     @param mode: Mode name
     @type mode: str
     @return: Return text with result
@@ -1568,7 +1561,6 @@ def ping_ip():
 def traceroute_ip():
     """
     Execute ping traceroute command.
-
     @return: Return text with result
     @rtype: str
     """
@@ -1648,7 +1640,6 @@ def init_dashboard():
 def check_update():
     """
     Dashboard check update
-
     @return: Retunt text with result
     @rtype: str
     """
