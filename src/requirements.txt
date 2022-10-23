@@ -1,6 +1,6 @@
-Flask
-ifcfg
-icmplib
-flask-qrcode
-gunicorn
-certbot
+Flask==2.2.2
+ifcfg==0.23
+icmplib==3.0.3
+flask-qrcode==3.1.0
+gunicorn==20.1.0
+certbot==1.20.0
